@@ -19,8 +19,7 @@ public class GA_Calculator {
 	public static void initialize_ds(){
 		int city1,city2;
 		BufferedReader readBuffer = null;
-		int totalCities;
-		String xValues[] = new String[8];
+		String xValues[] = new String[totalCities];
 		
 		// Reading the given file
 		try{
@@ -41,7 +40,7 @@ public class GA_Calculator {
 			xString = readBuffer.readLine();
 			x = Integer.parseInt(xString);
 			
-			int startCity = x;
+			int startCity = x-1;
 			
 			System.out.println("Total cities: "+(totalCities+1)+" | Starting city: "+startCity);
 			
