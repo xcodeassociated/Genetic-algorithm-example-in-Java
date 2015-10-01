@@ -7,18 +7,13 @@ Steps:
 
 2. Initializing first generation
 
-2.5 Add more variables to play around with
-
 3. Creating next generation
-
-3.5 Add more variables to play around with
 
 4. Crossover and mutation
 
-4.5 Add more variables to play around with
-
 5. Putting everything together!
 
+----
 
 How does the program read?
 
@@ -29,6 +24,8 @@ The first line represents no. of cities
 The second line represents the city to start and end with (creating a circuit)
 
 then from the third line, the program starts reading the distance between x and y cities and store it in a data structure for later use.
+
+----
 
 How to put the text for distance:
 
@@ -50,6 +47,9 @@ The distance between city 0 and city 3 is 66
 The distance between city 1 and city 3 is 23
 
 The distance between city 2 and city 3 is 234
+
+
+----
 
 If I were to show it with a bit more description, it would look like this..
 
