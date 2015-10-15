@@ -1,6 +1,10 @@
+/*  Contributers: Balraj Singh Bains
+ *  Date:   10.16.2015
+ *  About:  Genetic Algorithm Coursework
+ */
+
 import java.io.*;
 import java.util.Random;
-
 
 public class GA_Calculator {
 	
@@ -8,22 +12,35 @@ public class GA_Calculator {
 	 * from city X and going through all other cities
 	 */
 	
-	static String FILE = "format.txt"; // The string format should be according to format.txt
+	//TODO: Add tournament selection for parents
+	//TODO: Add global variables for best fit chromosome and a print method to print it's fitness and genes
+	
+	// variables
 	static int totalCities, startCity;
 	static int[][] dist_matrix;				// [startCity][endCity] | returns a distance between 2 cities (Permanent) 
-	static int[][] population;				// [chromosome][gene] | returns a gene of a given gene position in the chromosome (Overrides every generation)
+	static int[][][] population;				// [generation][chromosome][gene] | returns a gene value of a given gene position in the chromosome for a generation (Overrides every generation)
+	// Modifiable variables
+	static String FILE = "format.txt"; // The string format should be according to format.txt
 	static int generation = 0;
-	static int maxGeneration = 10;
-	static int maxPopulation = 10;
+	static int maxGeneration = 3;
+	static int maxPopulation = 3;
+	static double mutationRate = 0;
+	// elite stuff (you can change elitism)
+	static int[] ePopulation = new int[maxGeneration];			// [generation] | returns the best chromosome from that generation
+	static int elitism = 1;
+	
 	// [Generation][Chromosome] | returns a fitness of a chromosome from a generation
 	static double[][] fitness = new double[maxGeneration][maxPopulation];				
 	
-	//Debug configs
+	//Print configs
 	static boolean print_additional_info = true;
-	static boolean print_dist_matrix = true;
+	static boolean print_dist_matrix = false;
 	static boolean print_chromosome_fitness_details = true;
+	static boolean print_population = true;
+	static boolean print_eFitness = true;
+	static boolean print_mutation = true;
 	
-	// Constructor
+	// Constructor (it's pretty useless)
 	public GA_Calculator(String fileName){
 		this.FILE = fileName;
 	}
@@ -44,6 +61,7 @@ public class GA_Calculator {
 			String xString = readBuffer.readLine();
 			int x = Integer.parseInt(xString);
 			
+			// For the system, we have made the totalCities as totalCities-1
 			totalCities = x-1;
 			
 			// Set the size depending on total cities
@@ -103,7 +121,7 @@ public class GA_Calculator {
 	// Initializing population
 	public static void initializePopulation(){
 		int chromosome = 0;
-		population = new int[maxPopulation][totalCities+1];
+		population = new int[maxGeneration][maxPopulation][totalCities+2];
 		
 		// Initialize our array of visitedCities
 		int[] visitedCities = new int[totalCities+1];
@@ -114,10 +132,13 @@ public class GA_Calculator {
 		while(chromosome != maxPopulation){
 			
 				// set the starting city (gene value) to starting city
-				population[chromosome][0] = startCity;
+				population[generation][chromosome][0] = startCity;
+				
+				if(print_population == true)
+					System.out.print(generation+"-"+chromosome+" : "+population[generation][chromosome][0]);
 				
 				// next few cities
-				for(int gene = 1; gene < totalCities; gene++){
+				for(int gene = 1; gene <= totalCities; gene++){
 					
 					// generate a random gene value (city) for the gene
 					int city = genRandom(totalCities+1);
@@ -131,34 +152,43 @@ public class GA_Calculator {
 					}
 					
 					// Add this gene value to the gene
-					population[chromosome][gene] = city;
-					
+					population[generation][chromosome][gene] = city;
+
 					// Add to visited city to keep track
 					visitedCities[gene] = city;
+					
+					if(print_population == true)
+						System.out.print(" "+city+" ");
 				}
 				
 				// ending cities (gene value) to 3
-				population[chromosome][totalCities] = startCity;
+				population[generation][chromosome][totalCities+1] = startCity;
+				
+				if(print_population == true)
+					System.out.println(" "+population[generation][chromosome][totalCities+1]);
 				
 				// create another chromosome
 				chromosome++;
 			}
 		}
 	
+	// Evaluate the population to get their fitness
 	public static void evaluatePopulation(){
 		double totalDist = 0;
 		double fitnessValue = 0;
 		int cityA,cityB;
 		int chromosome = 0;
+		int eChromosome = 0;
+		double eFitness = 0;
 		
 		// Lets go through all the chromosome and store their fitness
 		while(chromosome != maxPopulation){
 			
-			for(int gene = 0; gene < totalCities; gene++){
+			for(int gene = 0; gene <= totalCities; gene++){
 				// Get city A value
-				cityA = population[chromosome][gene];
+				cityA = population[generation][chromosome][gene];
 				// Get City B value
-				cityB = population[chromosome][gene+1];
+				cityB = population[generation][chromosome][gene+1];
 				// Get the distance between the cities and add em up to total distance
 				totalDist += dist_matrix[cityA][cityB];
 				if(print_chromosome_fitness_details == true)
@@ -179,20 +209,137 @@ public class GA_Calculator {
 			
 			// Store the fitness
 			fitness[generation][chromosome] += fitnessValue;
+			if(fitnessValue > eFitness){
+				eFitness = fitnessValue;
+				eChromosome = chromosome;
+			}
+			
 			// Move to next chromosome in our generation
 			chromosome++;
 			// Reset variables
 			totalDist = 0;
 		}
+		
+		if(print_eFitness == true)
+			System.out.println("Best Fitness "+generation+"-"+eChromosome+" : "+eFitness);
+
+		// adding the finest one to ePopulation
+		ePopulation[generation]=eChromosome;
 	}
 	
-	// X is the limit
+	// X is the exclusive limit, if you want 0 or 1, put x = 2
 	public static int genRandom(int x){
 		Random output = new Random(); 
 		int number = output.nextInt(x);
 		return number;
 	}
 	
+	// Create next generation with the help of previous generation
+	public static void createNextGen(){
+		int elitismOffset = 0;
+		int parentA,parentB;
+		int [] usedGenes = new int[totalCities+2];
+		
+		// Elitism is on, then one BEST chromosome gets a free pass to the next generation
+		if(elitism == 1){
+			
+			for(int chromosome = 0; chromosome < elitism; chromosome++){
+				
+				if(print_population == true)
+					System.out.print(generation+"-"+chromosome+" :");
+				
+				for(int gene = 0; gene <= totalCities+1; gene++){
+
+					population[generation][chromosome][gene] = population[generation-1][ePopulation[generation-1]][gene];
+					if(print_population == true)
+						System.out.print(" "+population[generation][chromosome][gene]+" ");
+				}
+				
+				System.out.println();
+			}
+			
+			elitismOffset++;
+		}
+		
+		// We start here, to create our new population
+		for(int chromosome = elitismOffset; chromosome < maxPopulation; chromosome++){
+			
+			// Set parents
+			parentA = genRandom(maxPopulation);
+			parentB = genRandom(maxPopulation);
+			
+			// Setting our first and last genes as 3 for all the chromosome
+			population[generation][chromosome][0] = startCity;
+			population[generation][chromosome][totalCities+1] = startCity;
+			
+			if(print_population == true)
+				System.out.print(parentA+"+"+parentB+" | "+generation+"-"+chromosome+" : "+population[generation][chromosome][0]);
+
+			for(int gene = 1; gene <= totalCities; gene++){
+				
+				// parent random selection
+				int pSelect = genRandom(2);
+				String sParent;
+				// if parent is A else B.
+				if(pSelect > 0){
+					population[generation][chromosome][gene] = population[generation-1][parentA][gene];
+					usedGenes[gene] = population[generation-1][parentA][gene];
+					sParent = "A";
+				}else{
+					population[generation][chromosome][gene] = population[generation-1][parentB][gene];	
+					sParent = "B";
+					usedGenes[gene] = population[generation-1][parentA][gene];
+				}
+				
+				// Check if this gene is repeated, if yes, then replace this gene with a random unique gene
+				for(int i = 1; i < gene; i++){
+					if(population[generation][chromosome][gene] == usedGenes[i] || population[generation][chromosome][gene] == startCity){
+						// check if the gene value already exists in one of the genes
+						population[generation][chromosome][gene] = genRandom(totalCities+1);
+						sParent = "R";
+						i = 0;
+					}
+				}
+				
+				usedGenes[gene] = population[generation][chromosome][gene];
+				
+				if(print_population == true)
+					System.out.print(" "+population[generation][chromosome][gene]+"("+sParent+")"+" ");
+			}
+			
+			if(print_population == true)
+				System.out.println(" "+startCity);
+			
+			if(print_mutation)
+				System.out.print("M@");
+			
+			// Gene position (select from 1 to 6 (inclusive))
+			int gPosition = genRandom(totalCities)-1;
+			
+			if(print_mutation)
+				System.out.print(gPosition+ " : "+population[generation][chromosome][0]);
+			
+			
+			// Mutation take 2 genes and swap em
+			for(int gene = 1; gene <= totalCities; gene++){
+				
+				int tGene;
+				
+				if(gene == gPosition){
+					tGene = population[generation][chromosome][gene];
+					population[generation][chromosome][gene] = population[generation][chromosome][gene+1];
+					population[generation][chromosome][gene+1] = tGene;
+					System.out.print("(S)");
+				}
+				
+				System.out.print(" "+population[generation][chromosome][gene]+" ");
+			}
+			if(print_mutation)
+				System.out.println(" "+population[generation][chromosome][totalCities+1]);
+		}
+		
+		
+	}
 	
 	public static void main(String[] args) {
 		
@@ -201,6 +348,12 @@ public class GA_Calculator {
 		initializePopulation();
 		
 		evaluatePopulation();
+		
+		while(++generation < maxGeneration){
+			createNextGen();
+			evaluatePopulation();
+		}
+		
 	}
 
 }
