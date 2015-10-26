@@ -6,6 +6,8 @@
 import java.io.*;
 import java.util.Random;
 
+import javafx.scene.Parent;
+
 public class GA_Calculator {
 	
 	/* Our aim is to find the best circuit 
@@ -22,22 +24,28 @@ public class GA_Calculator {
 	// Modifiable variables
 	static String FILE = "format.txt"; // The string format should be according to format.txt
 	static int generation = 0;
-	static int maxGeneration = 3;
-	static int maxPopulation = 3;
+	static int maxGeneration = 5;
+	static int maxPopulation = 5;
 	static double mutationRate = 0;
 	// elite stuff (you can change elitism)
 	static int[] ePopulation = new int[maxGeneration];			// [generation] | returns the best chromosome from that generation
 	static int elitism = 1;
 	
 	// [Generation][Chromosome] | returns a fitness of a chromosome from a generation
-	static double[][] fitness = new double[maxGeneration][maxPopulation];				
+	static double[][] fitness = new double[maxGeneration][maxPopulation];	
+	
+	
+	//Best variables
+	static int bestChromosome;
+	static int bestGeneration;
 	
 	//Print configs
 	static boolean print_additional_info = true;
 	static boolean print_dist_matrix = false;
 	static boolean print_chromosome_fitness_details = true;
+	static boolean print_chromosome_fitness_details_steps = false;
 	static boolean print_population = true;
-	static boolean print_eFitness = true;
+	static boolean print_eFitness = true;  // elite fitness
 	static boolean print_mutation = true;
 	
 	// Constructor (it's pretty useless)
@@ -191,7 +199,7 @@ public class GA_Calculator {
 				cityB = population[generation][chromosome][gene+1];
 				// Get the distance between the cities and add em up to total distance
 				totalDist += dist_matrix[cityA][cityB];
-				if(print_chromosome_fitness_details == true)
+				if(print_chromosome_fitness_details_steps == true)
 					System.out.println("step "+gene+"("+cityA+")"+"->"+(gene+1)+"("+cityB+")"+":"+totalDist);
 			}
 			
@@ -199,7 +207,7 @@ public class GA_Calculator {
 			fitnessValue = 1/totalDist;
 			
 			if( print_chromosome_fitness_details == true)
-				System.out.println(chromosome+ " F: "+fitnessValue );
+				System.out.println(generation+"-"+chromosome+ " F: "+fitnessValue );
 			
 			// We quit if fitness value is calculated as 0 (which should not happen)
 			if(fitnessValue == 0.00){
@@ -234,6 +242,12 @@ public class GA_Calculator {
 		return number;
 	}
 	
+	public static double genRandomDouble(){
+		Random output = new Random();
+		double number = output.nextDouble();
+		return number;
+	}
+	
 	// Create next generation with the help of previous generation
 	public static void createNextGen(){
 		int elitismOffset = 0;
@@ -265,8 +279,12 @@ public class GA_Calculator {
 		for(int chromosome = elitismOffset; chromosome < maxPopulation; chromosome++){
 			
 			// Set parents
-			parentA = genRandom(maxPopulation);
-			parentB = genRandom(maxPopulation);
+			parentA = selectParent();
+			parentB = selectParent();
+			
+			while(parentB == parentA){
+				parentB = selectParent();
+			}
 			
 			// Setting our first and last genes as 3 for all the chromosome
 			population[generation][chromosome][0] = startCity;
@@ -320,7 +338,7 @@ public class GA_Calculator {
 				System.out.print(gPosition+ " : "+population[generation][chromosome][0]);
 			
 			
-			// Mutation take 2 genes and swap em
+			// Mutation takes 2 genes and swap em
 			for(int gene = 1; gene <= totalCities; gene++){
 				
 				int tGene;
@@ -337,9 +355,41 @@ public class GA_Calculator {
 			if(print_mutation)
 				System.out.println(" "+population[generation][chromosome][totalCities+1]);
 		}
-		
-		
+			
 	}
+	
+	private static int selectParent(){
+		double totalFitness = 0.0;
+		double random;
+		int chromosome;
+		double [][] parentChance = new double[2][maxPopulation];
+		double pChance;
+		
+		for(chromosome = 0; chromosome < maxPopulation; chromosome++){
+			totalFitness += fitness[generation-1][chromosome];
+		}
+		
+		for(chromosome = 0; chromosome < maxPopulation; chromosome++){
+			pChance = fitness[generation-1][chromosome]/totalFitness;
+			parentChance[0][chromosome] = pChance;
+			if(chromosome > 0){
+				parentChance[1][chromosome] = parentChance[1][chromosome-1]+parentChance[0][chromosome-1];
+			}else{
+				parentChance[1][chromosome] = 0.0;
+			}
+		}
+		
+		random = genRandomDouble();
+		
+		for(chromosome = 0; chromosome < maxPopulation; chromosome++){
+			if(random >= parentChance[0][chromosome] && random < (parentChance[1][chromosome]+parentChance[0][chromosome]))
+				return chromosome;
+		}
+		
+		return 0;
+	}
+	
+	
 	
 	public static void main(String[] args) {
 		
