@@ -6,16 +6,11 @@
 import java.io.*;
 import java.util.Random;
 
-import javafx.scene.Parent;
-
 public class GA_Calculator {
 	
 	/* Our aim is to find the best circuit 
 	 * from city X and going through all other cities
 	 */
-	
-	//TODO: Add tournament selection for parents
-	//TODO: Add global variables for best fit chromosome and a print method to print it's fitness and genes
 	
 	// variables
 	static int totalCities, startCity;
@@ -24,31 +19,30 @@ public class GA_Calculator {
 	// Modifiable variables
 	static String FILE = "format.txt"; // The string format should be according to format.txt
 	static int generation = 0;
-	static int maxGeneration = 5;
-	static int maxPopulation = 5;
+	static int maxGeneration = 50;
+	static int maxPopulation = 10;
 	static double mutationRate = 0;
-	// elite stuff (you can change elitism)
+	// elite stuff (you can change elitism to either 1 or 0)
 	static int[] ePopulation = new int[maxGeneration];			// [generation] | returns the best chromosome from that generation
 	static int elitism = 1;
 	
 	// [Generation][Chromosome] | returns a fitness of a chromosome from a generation
 	static double[][] fitness = new double[maxGeneration][maxPopulation];	
 	
-	
-	//Best variables
+	// Best variables, use to record the answer
 	static int bestChromosome;
 	static int bestGeneration;
 	
-	//Print configs
+	//Print configs, set it to true or false.
 	static boolean print_additional_info = true;
 	static boolean print_dist_matrix = false;
 	static boolean print_chromosome_fitness_details = true;
 	static boolean print_chromosome_fitness_details_steps = false;
-	static boolean print_population = true;
+	static boolean print_population = false;
 	static boolean print_eFitness = true;  // elite fitness
-	static boolean print_mutation = true;
+	static boolean print_mutation = false;
 	
-	// Constructor (it's pretty useless)
+	// Constructor (it's pretty useless because everything is in this class)
 	public GA_Calculator(String fileName){
 		this.FILE = fileName;
 	}
@@ -82,7 +76,7 @@ public class GA_Calculator {
 			startCity = x-1;
 			
 			if(print_additional_info == true)
-				System.out.println("Total cities: "+(totalCities+1)+" | Starting city: "+startCity);
+				System.out.println("Total cities: "+(totalCities+1)+" | Starting city: "+(startCity+1)+"\nNOTE: Total cities are 8, but the program reads from 0 to 7, and therefore the starting city is read as 2");
 			
 			// Get the distance between the cities
 			city1 = 0;
@@ -206,8 +200,16 @@ public class GA_Calculator {
 			// Calculating fitness value, fitness value should be between 0 and 1, 1 would mean its perfect, while 0 would mean its the opposite of perfect
 			fitnessValue = 1/totalDist;
 			
-			if( print_chromosome_fitness_details == true)
-				System.out.println(generation+"-"+chromosome+ " F: "+fitnessValue );
+			// FITNESS PRINT METHOD, This is the best way of having a look at the chromosome and their fitness
+			if( print_chromosome_fitness_details == true){
+				System.out.print(generation+"-"+chromosome+" | C:");
+				
+				for(int gene = 0 ; gene <= totalCities+1; gene++){
+					System.out.print(" "+population[generation][chromosome][gene]+" ");
+				}
+				
+				System.out.println("| D: "+totalDist+" | F: "+fitnessValue );
+			}
 			
 			// We quit if fitness value is calculated as 0 (which should not happen)
 			if(fitnessValue == 0.00){
@@ -229,23 +231,42 @@ public class GA_Calculator {
 		}
 		
 		if(print_eFitness == true)
-			System.out.println("Best Fitness "+generation+"-"+eChromosome+" : "+eFitness);
+			System.out.println("Champion of this gen "+generation+"-"+eChromosome+" : "+eFitness);
 
 		// adding the finest one to ePopulation
 		ePopulation[generation]=eChromosome;
-	}
-	
-	// X is the exclusive limit, if you want 0 or 1, put x = 2
-	public static int genRandom(int x){
-		Random output = new Random(); 
-		int number = output.nextInt(x);
-		return number;
-	}
-	
-	public static double genRandomDouble(){
-		Random output = new Random();
-		double number = output.nextDouble();
-		return number;
+		
+		// At the end we get the best generation and the best chromosome
+		if(generation == maxGeneration-1){
+			// some print commands
+			System.out.println("\nFinal Results:");
+			// find the best stuff
+			for(int i = 0; i < maxGeneration; i++){
+				for(int j = 0; j < maxPopulation; j++){
+					if(fitness[i][j] > fitness[bestGeneration][bestChromosome]){	
+						fitness[bestGeneration][bestChromosome] = fitness[i][j];
+						bestChromosome = j;
+						bestGeneration = i;
+					}
+				}
+			}
+			// print the best stuff
+			System.out.print(bestGeneration+"-"+bestChromosome+" : C: ");
+			for(int gene = 0; gene <= totalCities+1; gene++){
+				System.out.print(" "+population[bestGeneration][bestChromosome][gene]+" ");
+				// Get the best distance again
+				if(gene < totalCities+1){
+					// Get city A value
+					cityA = population[bestGeneration][bestChromosome][gene];
+					// Get City B value
+					cityB = population[bestGeneration][bestChromosome][gene+1];
+					// Get the distance between the cities and add em up to total distance
+					totalDist += dist_matrix[cityA][cityB];
+				}
+			}
+			// print the fitness and distances
+			System.out.print(" | D: "+totalDist+" | F: "+fitness[bestGeneration][bestChromosome]);
+		}
 	}
 	
 	// Create next generation with the help of previous generation
@@ -347,10 +368,12 @@ public class GA_Calculator {
 					tGene = population[generation][chromosome][gene];
 					population[generation][chromosome][gene] = population[generation][chromosome][gene+1];
 					population[generation][chromosome][gene+1] = tGene;
-					System.out.print("(S)");
+					if(print_mutation)
+						System.out.print("(S)");
 				}
 				
-				System.out.print(" "+population[generation][chromosome][gene]+" ");
+				if(print_mutation)
+					System.out.print(" "+population[generation][chromosome][gene]+" ");
 			}
 			if(print_mutation)
 				System.out.println(" "+population[generation][chromosome][totalCities+1]);
@@ -389,21 +412,46 @@ public class GA_Calculator {
 		return 0;
 	}
 	
+	// RANDOM FUNCTIONS--------------------------------------------
+
+	// X is the exclusive limit, if you want 0 or 1, put x = 2
+	public static int genRandom(int x){
+		Random output = new Random(); 
+		int number = output.nextInt(x);
+		return number;
+	}
 	
+	// Generate a random of type double, the generated value is between 0.00 and 1.00
+	public static double genRandomDouble(){
+		Random output = new Random();
+		double number = output.nextDouble();
+		return number;
+	}
+	
+	// RANDOM FUNCTIONS END-------------------------------------------
 	
 	public static void main(String[] args) {
 		
+		// This method reads from the format file to get the distance between cities
 		initialize_ds();
 		
+		// Our 0 generation, this is where it begins
+		System.out.println("\nGen: 0");
 		initializePopulation();
 		
+		// We perform this function after creating every generation to evaluate their fitness
 		evaluatePopulation();
 		
+		// We then start a loop to create our next generations
 		while(++generation < maxGeneration){
+			// Creates next set of generation with crossover and mutation (also elitism if its on)
 			createNextGen();
+			// Evaluate the generation again
+			System.out.println("Gen: " + generation);
 			evaluatePopulation();
 		}
 		
+		// Fin.
 	}
 
 }
