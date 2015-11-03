@@ -1,4 +1,4 @@
-/*  Contributers: Balraj Singh Bains
+/*  Contributers: Balraj Singh Bains, Mark Ericson Santos
  *  Date:   10.16.2015
  *  About:  Genetic Algorithm Coursework
  */
@@ -21,7 +21,8 @@ public class GA_Calculator {
 	static int generation = 0;
 	static int maxGeneration = 50;
 	static int maxPopulation = 10;
-	static double mutationRate = 0;
+	static double mutationRate = 0.5;
+	static double crossoverRate = 0.5;
 	// elite stuff (you can change elitism to either 1 or 0)
 	static int[] ePopulation = new int[maxGeneration];			// [generation] | returns the best chromosome from that generation
 	static int elitism = 1;
@@ -302,7 +303,7 @@ public class GA_Calculator {
 			// Set parents
 			parentA = selectParent();
 			parentB = selectParent();
-			
+			// To have different parents 
 			while(parentB == parentA){
 				parentB = selectParent();
 			}
@@ -313,14 +314,18 @@ public class GA_Calculator {
 			
 			if(print_population == true)
 				System.out.print(parentA+"+"+parentB+" | "+generation+"-"+chromosome+" : "+population[generation][chromosome][0]);
-
+			
+			// Creating a child with cross over 
 			for(int gene = 1; gene <= totalCities; gene++){
 				
 				// parent random selection
-				int pSelect = genRandom(2);
+				double pSelect = genRandomDouble();
+				
+				// Record the parent in a string for display purpose
 				String sParent;
-				// if parent is A else B.
-				if(pSelect > 0){
+				
+				// if parent is A else B. (We take a gene from the selected parent)
+				if(pSelect > crossoverRate){
 					population[generation][chromosome][gene] = population[generation-1][parentA][gene];
 					usedGenes[gene] = population[generation-1][parentA][gene];
 					sParent = "A";
@@ -346,6 +351,7 @@ public class GA_Calculator {
 					System.out.print(" "+population[generation][chromosome][gene]+"("+sParent+")"+" ");
 			}
 			
+			// Few print methods
 			if(print_population == true)
 				System.out.println(" "+startCity);
 			
@@ -358,22 +364,25 @@ public class GA_Calculator {
 			if(print_mutation)
 				System.out.print(gPosition+ " : "+population[generation][chromosome][0]);
 			
-			
+			// MUTATION
 			// Mutation takes 2 genes and swap em
-			for(int gene = 1; gene <= totalCities; gene++){
-				
-				int tGene;
-				
-				if(gene == gPosition){
-					tGene = population[generation][chromosome][gene];
-					population[generation][chromosome][gene] = population[generation][chromosome][gene+1];
-					population[generation][chromosome][gene+1] = tGene;
+			double doMutation = genRandomDouble();
+			if(doMutation <= mutationRate){
+				for(int gene = 1; gene <= totalCities; gene++){
+					
+					int tGene;
+					
+					if(gene == gPosition){
+						tGene = population[generation][chromosome][gene];
+						population[generation][chromosome][gene] = population[generation][chromosome][gene+1];
+						population[generation][chromosome][gene+1] = tGene;
+						if(print_mutation)
+							System.out.print("(S)");
+					}
+					
 					if(print_mutation)
-						System.out.print("(S)");
+						System.out.print(" "+population[generation][chromosome][gene]+" ");
 				}
-				
-				if(print_mutation)
-					System.out.print(" "+population[generation][chromosome][gene]+" ");
 			}
 			if(print_mutation)
 				System.out.println(" "+population[generation][chromosome][totalCities+1]);
