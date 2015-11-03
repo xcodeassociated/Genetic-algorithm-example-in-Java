@@ -19,8 +19,8 @@ public class GA_Calculator {
 	// Modifiable variables
 	static String FILE = "format.txt"; // The string format should be according to format.txt
 	static int generation = 0;
-	static int maxGeneration = 50;
-	static int maxPopulation = 10;
+	static int maxGeneration = 100;
+	static int maxPopulation = 50;
 	static double mutationRate = 0.5;
 	static double crossoverRate = 0.5;
 	// elite stuff (you can change elitism to either 1 or 0)
@@ -99,7 +99,10 @@ public class GA_Calculator {
 						x = Integer.parseInt(xValues[j]);
 						// Store
 						dist_matrix[city1][city2] = x;
-						dist_matrix[city2][city1] = x;
+						if(city1 == 3 && city2 == 5)
+							dist_matrix[city2][city1] = x-10;
+						else
+							dist_matrix[city2][city1] = x;
 						if(print_dist_matrix == true){
 							System.out.println(city2+","+city1+" : "+dist_matrix[city2][city1]);
 							System.out.println(city1+","+city2+" : "+dist_matrix[city1][city2]);
