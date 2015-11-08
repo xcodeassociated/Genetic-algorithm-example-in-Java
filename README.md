@@ -5,13 +5,13 @@ Steps:
 
 1. Configure IO (Done)
 
-2. Initializing first generation
+2. Initializing first generation (Done)
 
-3. Creating next generation
+3. Creating next generation (Done)
 
-4. Crossover and mutation
+4. Crossover and mutation (Done)
 
-5. Putting everything together!
+5. Putting everything together! (Done)
 
 ----
 
